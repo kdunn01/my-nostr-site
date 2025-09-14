@@ -175,129 +175,159 @@ function MediaPreview({ url }) {
 
 /** Public sections */
 function PublicHome({ events }) {
-  const notes = events.filter((e) => e.kind === 1);
-  const blogs = events.filter((e) => e.kind === 30023);
-  const media = events.filter((e) => e.tags.some((t) => t[0] === "r"));
+  const blogs = events.filter(e => e.kind === 30023).sort((a,b)=>b.created_at-a.created_at);
+  const notes = events.filter(e => e.kind === 1).sort((a,b)=>b.created_at-a.created_at);
+
+  const hero = blogs[0];
+  const moreBlogs = blogs.slice(1,5);
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card title="Latest Blog Posts">
-        {blogs.length === 0 ? (
-          <EmptyState text="No blog posts yet." />
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {blogs.slice(0, 6).map((ev) => (
-              <article key={ev.id} style={{ display: "grid", gap: 6 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Pill>Blog</Pill>
-                  <span style={{ fontSize: 12, color: "#6b7280" }}>
-                    {new Date(ev.created_at * 1000).toLocaleString()}
-                  </span>
-                </div>
-                <a
-                  href={`#/post/${ev.id}`}
-                  style={{ fontWeight: 700, fontSize: 18, color: "#111827", textDecoration: "none" }}
-                >
-                  {ev.tags.find((t) => t[0] === "title")?.[1] || "Untitled"}
-                </a>
-                <div style={{ color: "#374151", whiteSpace: "pre-wrap" }}>
-                  {ev.content.length > 200 ? ev.content.slice(0, 200) + "…" : ev.content}
-                </div>
-              </article>
-            ))}
+    <div className="grid grid-2">
+      {/* Left: main content */}
+      <div className="grid" style={{gap:16}}>
+        {/* Hero */}
+        <div className="card hero">
+          <div className="post-meta">
+            <span className="badge">Featured</span>
+            {hero && <span>{new Date(hero.created_at*1000).toLocaleDateString()}</span>}
           </div>
-        )}
-      </Card>
-
-      <Card title="Recent Notes">
-        {notes.length === 0 ? (
-          <EmptyState text="No notes yet." />
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {notes.slice(0, 10).map((ev) => (
-              <article key={ev.id} style={{ display: "grid", gap: 6 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Pill>Note</Pill>
-                  <span style={{ fontSize: 12, color: "#6b7280" }}>
-                    {new Date(ev.created_at * 1000).toLocaleString()}
-                  </span>
-                  <a
-                    href={`https://njump.me/${ev.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ marginLeft: "auto", fontSize: 12, color: "#2563eb" }}
-                  >
-                    view on relay
-                  </a>
-                </div>
-                <div style={{ color: "#374151", whiteSpace: "pre-wrap" }}>{ev.content}</div>
-              </article>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <Card title="Media">
-        {media.length === 0 ? (
-          <EmptyState text="No media yet." />
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-            }}
-          >
-            {media.slice(0, 12).map((ev, idx) => {
-              const urls = ev.tags.filter((t) => t[0] === "r").map((t) => t[1]);
-              return urls.map((u, i) => (
-                <div key={ev.id + ":" + i} style={{ display: "grid" }}>
-                  <MediaPreview url={u} />
-                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
-                    {new Date(ev.created_at * 1000).toLocaleDateString()}
+          <a href={hero ? `#/post/${hero.id}` : '#/'} className="hero-title">
+            {hero ? (hero.tags.find(t=>t[0]==='title')?.[1] || 'Untitled') : 'No posts yet'}
+          </a>
+          {hero && (
+            <>
+              {/* first media if present */}
+              {hero.tags.filter(t=>t[0]==='r').slice(0,1).map((t,i)=>{
+                const url=t[1];
+                const isVideo=/\.(mp4|webm|ogg)$/i.test(url);
+                return (
+                  <div className="media" key={i}>
+                    {isVideo ? <video controls><source src={url}/></video> : <img src={url} alt=""/>}
                   </div>
+                );
+              })}
+              <p style={{margin:0,color:'#374151'}}>
+                {hero.content.length>220?hero.content.slice(0,220)+'…':hero.content}
+              </p>
+              <div><a className="btn" href={`#/post/${hero.id}`}>Read more</a></div>
+            </>
+          )}
+        </div>
+
+        {/* Latest Blog Posts */}
+        <div className="card">
+          <h3>Latest Posts</h3>
+          <div className="grid" style={{gap:16}}>
+            {moreBlogs.length===0 && <div className="muted">No more posts.</div>}
+            {moreBlogs.map(ev=>(
+              <article key={ev.id} className="post-item">
+                <div className="post-meta">
+                  <span className="badge">Blog</span>
+                  <span>{new Date(ev.created_at*1000).toLocaleDateString()}</span>
+                  <a href={`https://njump.me/${ev.id}`} target="_blank" rel="noreferrer" style={{marginLeft:'auto'}}>view</a>
                 </div>
-              ));
-            })}
+                <a className="post-item-title" href={`#/post/${ev.id}`}>
+                  {ev.tags.find(t=>t[0]==='title')?.[1] || 'Untitled'}
+                </a>
+                <div style={{color:'#374151',whiteSpace:'pre-wrap'}}>
+                  {ev.content.length>180?ev.content.slice(0,180)+'…':ev.content}
+                </div>
+              </article>
+            ))}
           </div>
-        )}
-      </Card>
+        </div>
+
+        {/* Recent Notes */}
+        <div className="card">
+          <h3>Recent Notes</h3>
+          <div className="grid" style={{gap:12}}>
+            {notes.slice(0,6).map(ev=>(
+              <article key={ev.id} className="post-item">
+                <div className="post-meta">
+                  <span className="badge">Note</span>
+                  <span>{new Date(ev.created_at*1000).toLocaleString()}</span>
+                  <a href={`https://njump.me/${ev.id}`} target="_blank" rel="noreferrer" style={{marginLeft:'auto'}}>view</a>
+                </div>
+                <div style={{color:'#374151',whiteSpace:'pre-wrap'}}>{ev.content}</div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: sidebar */}
+      <aside className="sidebar grid" style={{gap:16}}>
+        <div className="widget">
+          <h4>Social Networks</h4>
+          <div className="social">
+            {['Twitter','Instagram','YouTube','GitHub','Mastodon'].map(n=>(
+              <button key={n} className="iconbtn">{n}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="widget">
+          <h4>Categories</h4>
+          <div className="list">
+            {['Blog','Notes','Media','Philosophy','Theme Parks'].map(c=>(
+              <div key={c} style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span className="badge">{c}</span>
+                <span className="muted">→</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="widget">
+          <h4>Popular</h4>
+          <div className="list">
+            {blogs.slice(0,4).map(ev=>(
+              <a key={ev.id} href={`#/post/${ev.id}`} style={{display:'grid',gap:4}}>
+                <div style={{fontWeight:700}}>{ev.tags.find(t=>t[0]==='title')?.[1] || 'Untitled'}</div>
+                <span className="muted">{new Date(ev.created_at*1000).toLocaleDateString()}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div className="widget">
+          <h4>Tag Cloud</h4>
+          <div className="cloud">
+            {['nostr','life','music','theology','education','coasters','muppets'].map(t=>(
+              <span key={t} className="tag">#{t}</span>
+            ))}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
+
 
 function BlogPostPage({ events, id }) {
-  const ev = events.find((e) => e.id === id);
+  const ev = events.find(e => e.id === id);
   if (!ev) return <EmptyState text="Post not found." />;
-  const title = ev.tags.find((t) => t[0] === "title")?.[1] || "Untitled";
+  const title = ev.tags.find(t=>t[0]==='title')?.[1] || 'Untitled';
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card
-        title={title}
-        right={
-          <a href={`https://njump.me/${ev.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>
-            view on relay
-          </a>
-        }
-      >
-        <div style={{ fontSize: 12, color: "#6b7280" }}>
-          {new Date(ev.created_at * 1000).toLocaleString()}
+    <div className="grid">
+      <div className="card">
+        <div className="post-meta">
+          <span className="badge">Blog</span>
+          <span>{new Date(ev.created_at*1000).toLocaleString()}</span>
+          <a href={`https://njump.me/${ev.id}`} target="_blank" rel="noreferrer" style={{marginLeft:'auto'}}>view on relay</a>
         </div>
-        <div style={{ marginTop: 12, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{ev.content}</div>
-        {ev.tags
-          .filter((t) => t[0] === "r")
-          .map((t, i) => (
-            <MediaPreview key={i} url={t[1]} />
-          ))}
-      </Card>
-      <div>
-        <a href="#/" style={{ color: "#2563eb" }}>
-          ← Back to home
-        </a>
+        <h1 style={{margin:'8px 0 12px 0',fontSize:28}}>{title}</h1>
+        {ev.tags.filter(t=>t[0]==='r').slice(0,1).map((t,i)=>{
+          const url=t[1]; const isVideo=/\.(mp4|webm|ogg)$/i.test(url);
+          return <div className="media" key={i}>{isVideo?<video controls><source src={url}/></video>:<img src={url} alt=""/>}</div>;
+        })}
+        <div style={{whiteSpace:'pre-wrap',lineHeight:1.65,marginTop:12,color:'#374151'}}>{ev.content}</div>
       </div>
+      <div><a href="#/">← Back to home</a></div>
     </div>
   );
 }
+
 
 /** Admin dashboard (compose + filters) */
 function AdminDashboard({
@@ -533,19 +563,20 @@ export default function App() {
   async function fetchFeed() {
     setStatus("Loading…");
     try {
-      const filters = [{ kinds: [1, 30023], since }]
+      const filters = [{ kinds: [1, 30023], since }];
 
-// If the user explicitly set an author, use that…
+// If user typed an author, use that
 if (authorFilter) {
   try {
-    const d = nip19.decode(authorFilter)
-    if (d.type === 'npub') filters[0].authors = [d.data]
+    const d = nip19.decode(authorFilter);
+    if (d.type === "npub") filters[0].authors = [d.data];
   } catch {}
 } else {
-  // …otherwise default to the site owner
-  const oh = ownerHex()
-  if (oh) filters[0].authors = [oh]
+  // Otherwise, default to the site owner
+  const oh = ownerHex();
+  if (oh) filters[0].authors = [oh];
 }
+
 
       const pool = poolRef.current;
       if (!pool) throw new Error("Pool not ready");
@@ -770,12 +801,14 @@ if (authorFilter) {
     content = <EmptyState text="Page not found." />;
   }
 
-  return (
-    <div style={{ minHeight: "100vh", background: "#f3f4f6" }}>
-      <Header />
-      <main style={containerStyle}>{content}</main>
-      <Footer />
-    </div>
+ return (
+  <div style={{ minHeight: "100vh", background: "#f3f4f6" }}>
+    <Header />
+    <main className="container" style={containerStyle}>
+      {content}
+    </main>
+    <Footer />
+  </div>
   );
 }
 
